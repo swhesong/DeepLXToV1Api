@@ -13,6 +13,7 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
+    su-exec \
     && rm -rf /var/lib/apt/lists/*
 
 # 修正：创建与 docker-compose.yml 中 user: "1000:1000" 匹配的非 root 用户
@@ -28,13 +29,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制应用代码并设置所有权
 COPY --chown=appuser:appuser . .
 
-# 修正：创建目录并按要求赋予最大化权限(777)，确保任何情况都可写
+# 创建目录并设置最大权限，确保任何情况都可写
 RUN mkdir -p /app/results /app/logs && \
-    chown -R appuser:appuser /app/results /app/logs && \
-    chmod -R 777 /app/results /app/logs
-
-# 切换到非 root 用户
-USER appuser
+    chmod -R 777 /app/results /app/logs && \
+    chown -R appuser:appuser /app/results /app/logs
 
 # 暴露应用端口
 EXPOSE 8000
@@ -43,5 +41,14 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# 修改：使用统一的 $UVICORN_WORKERS 变量
-CMD exec uvicorn main:app --host 0.0.0.0 --port 8000 --workers $UVICORN_WORKERS --loop asyncio --log-level info
+# 创建启动脚本
+RUN echo '#!/bin/bash\n\
+# 确保目录存在并设置权限\n\
+mkdir -p /app/results /app/logs\n\
+chmod 777 /app/results /app/logs\n\
+# 以非root用户启动应用\n\
+exec su-exec appuser uvicorn main:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-2} --loop asyncio --log-level ${LOG_LEVEL:-info}\n' > /start.sh && \
+    chmod +x /start.sh
+
+# 使用启动脚本
+CMD ["/start.sh"]

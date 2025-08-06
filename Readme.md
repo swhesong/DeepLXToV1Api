@@ -32,26 +32,22 @@
 ```plaintext
 data: {"id": "a0e35ab6-b859-441b-93e6-6391dcb468ed", "object": "chat.completion.chunk", "created": 1709348239.833917, "model": "deeplx-ZH", "choices": [{"index": 0, "delta": {"content": "\u4f60\u597d"}, "finish_reason": null}]}
 
+## 宿主机操作步骤
+在运行容器之前，在宿主机上执行以下命令确保目录权限正确：
 data: [DONE]
 
+# 创建结果目录并设置权限
+mkdir -p ./results
+chmod 777 ./results
 
-```
-docker build -t devinglaw/deeplx-to-v1-api . && docker tag devinglaw/deeplx-to-v1-api devinglaw/deeplx-to-v1-api:latest && docker push devinglaw/deeplx-to-v1-api:latest
-docker buildx create --name mynewbuilder --use --bootstrap && \
-docker buildx build --platform linux/amd64,linux/arm64 -t devinglaw/deeplxtov1api:latest --push .
-docker buildx create --name mybuilder --use --bootstrap && \
-docker buildx use mybuilder && \
-docker buildx build --platform linux/amd64,linux/arm64 -t devinglaw/deeplxtov1api:latest --push .
-VPS里边操作：
-   ```
-    docker-compose up -d && docker-compose logs -f
-    docker login
-    docker buildx create --name mybuilder --driver docker-container --bootstrap
-		 docker buildx use mybuilder
-		 docker buildx ls
-    docker buildx build --platform linux/amd64,linux/arm64 -t devinglaw/deeplxtov1api:latest --push .
-    docker buildx build --platform linux/amd64,linux/arm64 -t devinglaw/deeplxtov1api:latest --push .
-   ```
+# 如果需要，也可以创建日志目录（可选，因为使用了 tmpfs）
+mkdir -p ./logs
+chmod 777 ./logs
+
+# 设置目录所有者为 1000:1000（对应容器内的用户）
+sudo chown -R 1000:1000 ./results
+sudo chown -R 1000:1000 ./logs 2>/dev/null || true
+
 
 ## 效果展示:
 

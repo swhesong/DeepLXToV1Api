@@ -28,15 +28,27 @@ import sys
 
 # Load .env file
 load_dotenv()
+
 # Configure logging with better formatting
 log_level = os.getenv("LOG_LEVEL", "info").upper()
+# 确保日志目录存在
+log_dir = '/app/logs'
+os.makedirs(log_dir, mode=0o777, exist_ok=True)
+
+# 配置日志处理器
+handlers = [logging.StreamHandler()]
+
+# 尝试添加文件日志处理器
+try:
+    file_handler = logging.FileHandler('/app/logs/translation_service.log', encoding='utf-8')
+    handlers.append(file_handler)
+except Exception as e:
+    print(f"Warning: Could not create file log handler: {e}")
+
 logging.basicConfig(
     level=getattr(logging, log_level),
     format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('/app/logs/translation_service.log', encoding='utf-8')
-    ]
+    handlers=handlers
 )
 logger = logging.getLogger(__name__)
 
@@ -76,6 +88,7 @@ class RateLimiter:
             
             self.requests.append(now)
             return True
+
 class URLStatus:
     def __init__(self):
         self.status_dict: Dict[str, dict] = {}
@@ -452,8 +465,15 @@ def get_streaming_support(request: Request) -> bool:
 def safe_write_text(text: str, filepath: str):
     """Safely write text to file, handling encoding issues."""
     try:
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # Create directory if it doesn't exist with full permissions
+        dir_path = os.path.dirname(filepath)
+        os.makedirs(dir_path, mode=0o777, exist_ok=True)
+        
+        # 确保目录权限正确
+        try:
+            os.chmod(dir_path, 0o777)
+        except:
+            pass  # 忽略权限设置错误
         
         # Clean text by removing or replacing problematic characters
         cleaned_text = text.encode('utf-8', errors='replace').decode('utf-8')
@@ -461,6 +481,13 @@ def safe_write_text(text: str, filepath: str):
         # Write with explicit UTF-8 encoding
         with open(filepath, "w", encoding="utf-8", errors='replace') as f:
             f.write(cleaned_text)
+        
+        # 尝试设置文件权限
+        try:
+            os.chmod(filepath, 0o666)
+        except:
+            pass  # 忽略权限设置错误
+            
         return True
     except Exception as e:
         logger.error(f"Error writing to file {filepath}: {e}")

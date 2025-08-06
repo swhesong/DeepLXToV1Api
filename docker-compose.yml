@@ -25,29 +25,23 @@ services:
 
     volumes:
       # 将宿主机的 ./results 目录挂载到容器的 /app/results，用于持久化可用URL列表
-      - ./results:/app/results
+      - ./results:/app/results:rw
       # 同步宿主机时间
       - /etc/localtime:/etc/localtime:ro
 
-    # 安全设置：以只读模式运行容器
-    read_only: true
+    # 移除 read_only 限制，允许写入操作
+    # read_only: false
     
-    # 关键修正：为所有需要写入的路径创建可写的 tmpfs (内存文件系统)
+    # 为需要写入的路径创建可写的 tmpfs (内存文件系统)
     tmpfs:
-      - /tmp
-      - /app/logs  # 为 /app/logs 目录创建可写挂载点
+      - /tmp:rw,noexec,nosuid,size=100m
+      - /app/logs:rw,noexec,nosuid,size=50m
       
     security_opt:
       - no-new-privileges:true
 
-    # 关键修正：覆盖启动命令，先修复所有权，再用环境变量启动应用
-    command: >
-      sh -c "
-        # 1. 修复所有需要写入的目录和文件的所有权，交给非 root 用户 (1000:1000)
-        chown -R 1000:1000 /app/logs /app/results &&
-        # 2. 切换到非 root 用户，并使用从 .env 加载的环境变量来启动 uvicorn
-        exec su-exec 1000:1000 uvicorn main:app --host $$HOST --port $$PORT --workers $$UVICORN_WORKERS --loop asyncio --log-level $$LOG_LEVEL
-      "
+    # 简化启动命令，移除 chown 操作
+    # command: 默认使用 Dockerfile 中的 CMD
     
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
@@ -77,5 +71,5 @@ services:
 
 networks:
   deeplx-network:
-    driver: bridge
-
+    driver_opts:
+      com.docker.network.driver.mtu: 1500
