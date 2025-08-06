@@ -36,7 +36,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('translation_service.log', encoding='utf-8')
+        logging.FileHandler('/app/logs/translation_service.log', encoding='utf-8')
     ]
 )
 logger = logging.getLogger(__name__)
