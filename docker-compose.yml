@@ -48,7 +48,6 @@ services:
       timeout: 15s
       retries: 3
       start_period: 30s
-
     deploy:
       resources:
         limits:
@@ -70,7 +69,6 @@ services:
     
     security_opt:
       - no-new-privileges:true
-    
     read_only: true
     tmpfs:
       - /tmp

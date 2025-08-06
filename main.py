@@ -28,7 +28,6 @@ import sys
 
 # Load .env file
 load_dotenv()
-
 # Configure logging with better formatting
 log_level = os.getenv("LOG_LEVEL", "info").upper()
 logging.basicConfig(
@@ -77,7 +76,6 @@ class RateLimiter:
             
             self.requests.append(now)
             return True
-
 class URLStatus:
     def __init__(self):
         self.status_dict: Dict[str, dict] = {}
