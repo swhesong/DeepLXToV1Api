@@ -45,8 +45,6 @@ services:
     volumes:
       # 确保宿主机上的 ./results 目录权限正确 (chown 1000:1000 ./results)
       - ./results:/app/results
-
-      - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     
     healthcheck:
