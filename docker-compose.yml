@@ -2,72 +2,59 @@ version: '3.8'
 
 services:
   deeplx:
+
     image: devinglaw/deeplxtov1api:latest
     container_name: deeplxtov1api
     restart: always
+    
+    # 关键：明确指定容器以 root 用户身份运行，赋予最高权限
+    # 这将覆盖 Dockerfile 中的任何 USER 指令，保证权限
+    user: root
+    
     ports:
-      - "38888:8000" # 将容器的 8000 端口映射到主机的 38888 端口
+      - "38888:8000"
 
-    # 主要配置来源：加载 ./app/.env 文件
-    # 请确保您的 .env 文件位于 docker-compose.yml 同级目录下的 app 文件夹内
+    # 从 .env 文件加载配置
     env_file:
       - ./app/.env
 
-    # environment 中只保留那些 .env 文件中没有的，或者与容器强相关的固定配置
+    # 环境变量，UVICORN_WORKERS 在这里定义，控制启动进程数
     environment:
-      # 性能优化: UVICORN_WORKERS 是 uvicorn 启动参数，在这里定义更清晰
       - UVICORN_WORKERS=2 
-      # 安全和限制: 这些是固定的安全策略，不常变动
       - MAX_TEXT_LENGTH=5000
       - DEBUG=false
-      # URL 管理: 初始延迟检查，属于启动策略
       - INITIAL_CHECK_DELAY=30
 
     volumes:
-      # 将宿主机的 ./results 目录挂载到容器的 /app/results，用于持久化可用URL列表
-      - ./results:/app/results:rw
+      # 挂载结果目录，root 用户可以无障碍写入
+      - ./results:/app/results
+      # 挂载日志目录，root 用户可以无障碍写入
+      - ./logs:/app/logs
       # 同步宿主机时间
       - /etc/localtime:/etc/localtime:ro
 
-    # 移除 read_only 限制，允许写入操作
-    # read_only: false
-    
-    # 为需要写入的路径创建可写的 tmpfs (内存文件系统)
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=100m
-      - /app/logs:rw,noexec,nosuid,size=50m
+    # 不再需要 tmpfs，直接挂载 logs 目录更直观
+    # tmpfs:
+    #   - /tmp:rw,noexec,nosuid,size=100m
       
-    security_opt:
-      - no-new-privileges:true
-
-    # 简化启动命令，移除 chown 操作
-    # command: 默认使用 Dockerfile 中的 CMD
-    
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-      interval: 30s
-      timeout: 15s
-      retries: 3
-      start_period: 30s
-
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-
     logging:
       driver: "json-file"
       options:
         max-size: "20m"
         max-file: "5"
-        compress: "true"
     
     networks:
       - deeplx-network
+
+# 如果您使用 deploy 配置，可以保留
+#   deploy:
+#     resources:
+#       limits:
+#         cpus: '2'
+#         memory: 1G
+#       reservations:
+#         cpus: '0.5'
+#         memory: 256M
 
 networks:
   deeplx-network:

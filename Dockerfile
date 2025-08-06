@@ -1,54 +1,35 @@
 # 使用官方 Python 3.9 精简镜像
 FROM python:3.9-slim
 
-# 设置环境变量
+# 设置环境变量，提高效率和一致性
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    # 修改：统一 worker 环境变量名，方便管理
-    UVICORN_WORKERS=2
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    ca-certificates \
-    su-exec \
-    && rm -rf /var/lib/apt/lists/*
-
-# 修正：创建与 docker-compose.yml 中 user: "1000:1000" 匹配的非 root 用户
-RUN groupadd -r -g 1000 appuser && useradd --no-log-init -r -u 1000 -g appuser appuser
+# 安装系统依赖（仅保留健康检查必须的 curl）
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
 WORKDIR /app
 
-# 复制和安装依赖
+# 复制 requirements.txt 并安装依赖
+# 这一步可以利用 Docker 的层缓存
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码并设置所有权
-COPY --chown=appuser:appuser . .
-
-# 创建目录并设置最大权限，确保任何情况都可写
-RUN mkdir -p /app/results /app/logs && \
-    chmod -R 777 /app/results /app/logs && \
-    chown -R appuser:appuser /app/results /app/logs
+# 复制所有应用代码到工作目录
+COPY . .
 
 # 暴露应用端口
 EXPOSE 8000
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+# 由于容器以 root 运行，此命令也以 root 身份执行
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# 创建启动脚本
-RUN echo '#!/bin/bash\n\
-# 确保目录存在并设置权限\n\
-mkdir -p /app/results /app/logs\n\
-chmod 777 /app/results /app/logs\n\
-# 以非root用户启动应用\n\
-exec su-exec appuser uvicorn main:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000} --workers ${UVICORN_WORKERS:-2} --loop asyncio --log-level ${LOG_LEVEL:-info}\n' > /start.sh && \
-    chmod +x /start.sh
-
-# 使用启动脚本
-CMD ["/start.sh"]
+# 默认启动命令
+# 使用 exec 确保 uvicorn 成为主进程 (PID 1)，能正确接收和处理信号
+# --workers 参数已被移除，将由 docker-compose.yml 中的环境变量 UVICORN_WORKERS 控制
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

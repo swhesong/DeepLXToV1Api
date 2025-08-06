@@ -15,3 +15,4 @@ pydantic>=2.5.0
 orjson>=3.9.0
 # 异步任务优化
 asyncio-throttle>=1.0.0
+
