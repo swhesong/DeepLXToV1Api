@@ -1,0 +1,9 @@
+
+Available DeepLX Endpoints with Latencies:
+------------------------------------------------------------
+🚀 https://api.deeplx.org/WILWeoSKQ0A3mQw0qkqhndbVodnaAIBtlQO6dAEa2ok/translate (1.64s)
+🚀 https://api.deeplx.org/Hz_ZQB39h6zxARQ4kZP4mO8k8BANChjdj2ZZtSpq34I/translate (1.59s)
+🚀 https://deeplx.vercel.app/translate (1.49s)
+------------------------------------------------------------
+
+DeepLX👌：(3) https://api.deeplx.org/WILWeoSKQ0A3mQw0qkqhndbVodnaAIBtlQO6dAEa2ok/translate, https://api.deeplx.org/Hz_ZQB39h6zxARQ4kZP4mO8k8BANChjdj2ZZtSpq34I/translate, https://deeplx.vercel.app/translate

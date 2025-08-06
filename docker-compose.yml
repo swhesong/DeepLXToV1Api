@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  deeplx:
+
+    image: devinglaw/deeplxtov1api:latest
+    container_name: deeplxtov1api
+    restart: always
+    ports:
+      - "38888:8000"
+    env_file:
+      - ./app/.env
+    environment:
+      # 核心配置
+      - ENABLE_STREAMING=true
+      - LOG_LEVEL=info
+      - HOST=0.0.0.0
+      - PORT=8000
+      
+      # 性能优化
+      - MAX_REQUESTS_PER_MINUTE=240
+      - TIMEOUT=30
+      - MAX_WORKERS=5
+      - CHECK_TIMEOUT=10
+      
+      # URL 管理
+      - CHECK_INTERVAL=300
+      - INITIAL_CHECK_DELAY=30
+      - AUTO_UPDATE_URLS=true
+      - MIN_AVAILABLE_URLS=2
+      
+      # 输出格式
+      - RESULT_FORMAT=detailed
+      - EXPORT_PATH=./results/useful.txt
+      
+      # 安全和限制
+      - MAX_TEXT_LENGTH=5000
+      - DEBUG=false
+      
+      # 测试配置
+      - TEST_TEXT=Hello, world!
+      - TEST_SOURCE_LANG=EN
+      - TEST_TARGET_LANG=ZH
+    
+    volumes:
+      # 确保宿主机上的 ./results 目录权限正确 (chown 1000:1000 ./results)
+      - ./results:/app/results
+
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+        compress: "true"
+    
+    networks:
+      - deeplx-network
+    
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    
+    # 只读根文件系统（除了必要目录）
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/logs
+    
+    # 用户配置
+    user: "1000:1000"
+
+networks:
+  deeplx-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1500

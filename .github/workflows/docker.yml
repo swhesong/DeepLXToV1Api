@@ -1,0 +1,62 @@
+name: Build and Push Docker Image on Release
+
+on:
+  release:
+    types: [created] # 触发条件：创建新的 Release
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Manual Tag to build and push'
+        required: true
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # 需要写权限来推送镜像
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 优点 1: 添加 QEMU 以实现稳定的跨平台构建
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 优点 2: 使用更安全的 DOCKERHUB_TOKEN 登录
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }} # 强烈建议换成 Token
+
+      # 优点 3: 使用现代化的语法提取标签名
+      - name: Extract tag name
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG=${GITHUB_REF#refs/tags/}
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG=${{ github.event.inputs.tag }}
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      # 优点 4: 使用最新的 build-push-action
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            devinglaw/deeplxtov1api:${{ steps.meta.outputs.tag }}
+            devinglaw/deeplxtov1api:latest
+          # 如果你的 Dockerfile 需要，可以在这里添加 build-args
+          # build-args: |
+          #   SOME_ARG=some_value
