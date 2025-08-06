@@ -14,15 +14,15 @@
 在运行容器之前，在宿主机上执行以下命令确保目录权限正确：
 data: [DONE]
 
-# 创建结果目录并设置权限
+- 创建结果目录并设置权限
 mkdir -p ./results
 chmod 777 ./results
 
-# 如果需要，也可以创建日志目录（可选，因为使用了 tmpfs）
+- 如果需要，也可以创建日志目录（可选，因为使用了 tmpfs）
 mkdir -p ./logs
 chmod 777 ./logs
 
-# 设置目录所有者为 1000:1000（对应容器内的用户）
+- 设置目录所有者为 1000:1000（对应容器内的用户）
 sudo chown -R 1000:1000 ./results
 sudo chown -R 1000:1000 ./logs 2>/dev/null || true
 
