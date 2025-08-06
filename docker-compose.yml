@@ -2,7 +2,6 @@ version: '3.8'
 
 services:
   deeplx:
-
     image: devinglaw/deeplxtov1api:latest
     container_name: deeplxtov1api
     restart: always
@@ -16,37 +15,31 @@ services:
       - LOG_LEVEL=info
       - HOST=0.0.0.0
       - PORT=8000
-      
-      # 性能优化
+      # 性能优化 (请根据需要添加回您的UVICORN_WORKERS变量)
+      - UVICORN_WORKERS=2 
       - MAX_REQUESTS_PER_MINUTE=240
       - TIMEOUT=30
       - MAX_WORKERS=5
       - CHECK_TIMEOUT=10
-      
       # URL 管理
       - CHECK_INTERVAL=300
       - INITIAL_CHECK_DELAY=30
       - AUTO_UPDATE_URLS=true
       - MIN_AVAILABLE_URLS=2
-      
       # 输出格式
       - RESULT_FORMAT=detailed
-      - EXPORT_PATH=./results/useful.txt
-      
+      - EXPORT_PATH=/app/results/useful.txt
       # 安全和限制
       - MAX_TEXT_LENGTH=5000
       - DEBUG=false
-      
       # 测试配置
       - TEST_TEXT=Hello, world!
       - TEST_SOURCE_LANG=EN
       - TEST_TARGET_LANG=ZH
     
     volumes:
-      # 确保宿主机上的 ./results 目录权限正确 (chown 1000:1000 ./results)
+      # 确保宿主机上的 ./results 目录权限正确
       - ./results:/app/results
-
-      - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     
     healthcheck:
@@ -55,7 +48,6 @@ services:
       timeout: 15s
       retries: 3
       start_period: 30s
-
 
     deploy:
       resources:
@@ -76,18 +68,23 @@ services:
     networks:
       - deeplx-network
     
-    # 安全配置
     security_opt:
       - no-new-privileges:true
     
-    # 只读根文件系统（除了必要目录）
     read_only: true
     tmpfs:
       - /tmp
       - /app/logs
     
-    # 用户配置
-    user: "1000:1000"
+    # 关键修正：移除 user 指令，让容器以 root 启动来执行 command
+    # user: "1000:1000" 
+
+    # 关键修正：覆盖启动命令，先修复权限，再切换用户启动应用
+    command: >
+      sh -c "
+        chown -R 1000:1000 /app/logs /app/results &&
+        exec su-exec 1000:1000 uvicorn main:app --host 0.0.0.0 --port 8000 --workers $$UVICORN_WORKERS --loop asyncio --log-level info
+      "
 
 networks:
   deeplx-network:

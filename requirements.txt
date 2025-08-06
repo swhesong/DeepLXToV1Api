@@ -1,24 +1,18 @@
 # Web 框架和服务器
 fastapi>=0.104.1
 uvicorn[standard]>=0.24.0
-
 # HTTP 客户端
 aiohttp>=3.9.0
-
 # 环境变量管理
 python-dotenv>=1.0.0
-
 # 进度条（用于 URL 检查）
 tqdm>=4.66.0
-
 # 同步 HTTP 请求（用于健康检查）
 requests>=2.31.0
-
 # 数据验证和序列化
 pydantic>=2.5.0
-
 # JSON 处理优化
 orjson>=3.9.0
-
 # 异步任务优化
 asyncio-throttle>=1.0.0
+
