@@ -14,6 +14,38 @@
     - `deeplx-ZH-EN`: 中文转英文
     - `deeplx-EN`: 自动识别语言转英文
     - `deeplx-ZH`: 自动识别语言转中文
+## 调用示例：
+
+```json
+{
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                "Hi"
+            ]
+        }
+    ],
+    "stream": true,
+    "model": "deeplx-ZH"
+}
+```
+
+预期响应：
+
+```plaintext
+data: {"id": "a0e35ab6-b859-441b-93e6-6391dcb468ed", "object": "chat.completion.chunk", "created": 1709348239.833917, "model": "deeplx-ZH", "choices": [{"index": 0, "delta": {"content": "\u4f60\u597d"}, "finish_reason": null}]}
+
+data: [DONE]
+
+
+```
+
+## 效果展示:
+
+![image](https://github.com/Ink-Osier/DeepLXToV1Api/assets/133617214/12c60ed1-538b-4a24-8b4d-999e54f8dabd)
+
+
 ## ✨ 核心功能
 
 *   **🚀 OpenAI 格式兼容**：完美模拟 `v1/chat/completions` 接口，无缝接入各类支持 OpenAI API 的应用和客户端。
