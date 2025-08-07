@@ -1,15 +1,5 @@
 # DeepLX to V1 API - 高性能翻译代理服务
 
-[
-![Docker Pulls](https://img.shields.io/docker/pulls/devinglaw/deeplxtov1api.svg?style=flat-square)
-](https://hub.docker.com/r/devinglaw/deeplxtov1api)
-[
-![GitHub Actions CI](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/docker.yml/badge.svg)
-](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/docker.yml)
-[
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)
-](https://opensource.org/licenses/MIT)
-
 一个强大、可靠且高性能的代理服务，它将多个 [DeepLX](https://github.com/OwO-Network/DeepLX) 服务聚合，并将其转换为一个统一的、兼容 OpenAI `v1/chat/completions` 格式的 API 接口。
 
 本项目专为需要高可用性和高吞吐量翻译服务的场景而设计，内置了智能负载均衡、自动健康检查和动态端点管理等高级功能。
