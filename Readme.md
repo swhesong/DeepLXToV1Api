@@ -1,6 +1,6 @@
 # DeepLX to V1 API - 高性能翻译代理服务
 
-一个强大、可靠且高性能的代理服务，它将多个 [DeepLX](https://github.com/OwO-Network/DeepLX) 服务聚合，并将其转换为一个统一的、兼容 OpenAI `v1/chat/completions` 格式的 API 接口。
+一个强大、可靠且高性能的代理服务，它将多个 [DeepLX] 服务聚合，并将其转换为一个统一的、兼容 OpenAI `v1/chat/completions` 格式的 API 接口。
 
 本项目专为需要高可用性和高吞吐量翻译服务的场景而设计，内置了智能负载均衡、自动健康检查和动态端点管理等高级功能。
 ## 用法
@@ -66,7 +66,7 @@ data: [DONE]
 克隆本仓库（或仅下载 `docker-compose.yml` 文件）到您的服务器。
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git clone https://github.com/swhesong/DeepLXToV1Api.git
 cd YOUR_REPO
 ```
 
