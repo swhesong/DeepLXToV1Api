@@ -599,7 +599,6 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
         # 从环境变量读取是否禁用速率限制，默认为不禁用(false)
         if not DISABLE_RATE_LIMIT:
             await rate_limiter.acquire(client_ip)
-
         
         logger.debug(f"[{request_id}] Processing chat completion request")
         
@@ -656,44 +655,46 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
                         translated_text = translation_result.get(target_lang, "")
                         
                         logger.info(f"[{request_id}] Streaming translation completed, {len(translated_text)} chars")
-			if use_streaming and ENABLE_CHAR_STREAMING:
-			    # 逐字发送，模拟真实打字效果
-			    for char in translated_text:
-			        delta = {"content": char}
-				data = {
-			            "id": chat_message_id,
-				        "object": "chat.completion.chunk",
-		                "created": timestamp,
-				        "model": chat_request.model,
-				        "choices": [{
-				        "index": 0,
-				        "delta": {"content": char},
-				        "finish_reason": None
-	                    }]
-	                }
-			        yield f"data: {json.dumps(data)}\n\n"
-			        # 根据文本长度动态调整延迟，避免长文本输出过慢
-			        delay = max(0.001, 0.1 / (len(translated_text) + 1))
-			        await asyncio.sleep(delay)
-			else:
-			    # 如果不启用模拟流，或者不是流式请求，则按原来的方式（或整块发送）                   
-	                        # Send translation in chunks for better UX
-	                        chunk_size = 100
-	                        for i in range(0, len(translated_text), chunk_size):
-	                            chunk = translated_text[i:i + chunk_size]
-	                            data = {
-	                                "id": chat_message_id,
-	                                "object": "chat.completion.chunk",
-	                                "created": timestamp,
-	                                "model": chat_request.model,
-	                                "choices": [{
-	                                    "index": 0,
-	                                    "delta": {"content": chunk},
-	                                    "finish_reason": None
-	                                }]
-	                            }
-	                            yield f"data: {json.dumps(data)}\n\n"
-	                            await asyncio.sleep(0.01)  # Small delay for chunking effect
+
+
+                        if use_streaming and ENABLE_CHAR_STREAMING:
+                            # 逐字发送，模拟真实打字效果
+                            for char in translated_text:
+                                data = {
+                                    "id": chat_message_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": timestamp,
+                                    "model": chat_request.model,
+                                    "choices": [{
+                                        "index": 0,
+                                        "delta": {"content": char},
+                                        "finish_reason": None
+                                    }]
+                                }
+                                yield f"data: {json.dumps(data)}\n\n"
+                                # 根据文本长度动态调整延迟，避免长文本输出过慢
+                                delay = max(0.001, 0.1 / (len(translated_text) + 1))
+                                await asyncio.sleep(delay)
+                        else:
+                            # 如果不启用模拟流，或者不是流式请求，则按原来的方式（或整块发送）                   
+                            # Send translation in chunks for better UX
+                            chunk_size = 100
+                            for i in range(0, len(translated_text), chunk_size):
+                                chunk = translated_text[i:i + chunk_size]
+                                data = {
+                                    "id": chat_message_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": timestamp,
+                                    "model": chat_request.model,
+                                    "choices": [{
+                                        "index": 0,
+                                        "delta": {"content": chunk},
+                                        "finish_reason": None
+                                    }]
+                                }
+                                yield f"data: {json.dumps(data)}\n\n"
+                                await asyncio.sleep(0.01)  # Small delay for chunking effect
+
                         
                         # Send finish signal
                         finish_data = {
@@ -782,6 +783,7 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
     except Exception as e:
         logger.exception(f"[{getattr(request.state, 'request_id', 'unknown')}] Unexpected server error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
 
 @app.post("/v1/check-and-export-urls")
 async def check_and_export_urls():
