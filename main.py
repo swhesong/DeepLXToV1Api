@@ -662,15 +662,15 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
 			        delta = {"content": char}
 				data = {
 			            "id": chat_message_id,
-				    "object": "chat.completion.chunk",
-		                    "created": timestamp,
-				    "model": chat_request.model,
-				    "choices": [{
+				        "object": "chat.completion.chunk",
+		                "created": timestamp,
+				        "model": chat_request.model,
+				        "choices": [{
 				        "index": 0,
 				        "delta": {"content": char},
 				        "finish_reason": None
-	                            }]
-	                        }
+	                    }]
+	                }
 			        yield f"data: {json.dumps(data)}\n\n"
 			        # 根据文本长度动态调整延迟，避免长文本输出过慢
 			        delay = max(0.001, 0.1 / (len(translated_text) + 1))
@@ -1098,6 +1098,7 @@ async def periodic_url_check():
     await asyncio.sleep(initial_delay)
     
     consecutive_failures = 0
+    max_consecutive_failures = 5
     
     while True:
         try:
