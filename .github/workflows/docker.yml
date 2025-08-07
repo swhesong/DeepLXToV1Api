@@ -1,13 +1,18 @@
-name: Build and Push Docker Image on Release
+# .github/workflows/docker.yml
 
+name: Build and Push Docker Image
+
+# 触发器：
+# 1. 创建新的 Release 时自动触发
+# 2. 允许在 Actions 页面手动触发
 on:
   release:
-    types: [created] # 触发条件：创建新的 Release
+    types: [created]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Manual Tag to build and push'
-        required: true
+        description: 'Manual Tag (e.g., 1.2.3). If empty, uses "latest".'
+        required: false
         type: string
 
 jobs:
@@ -15,53 +20,64 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # 需要写权限来推送镜像
+      packages: write
 
     steps:
+      # 步骤 1: 检出代码
       - name: Checkout repository
         uses: actions/checkout@v4
-        
 
-      - name: Check for CRLF line endings
-        uses: check-line-endings/check-line-endings@v1
+      # 步骤 2 (可选但推荐): 检查并强制转换为 LF 行尾，避免脚本错误
+      - name: Check and convert line endings to LF
+        run: |
+          find . -type f -name "*.sh" -exec dos2unix {} +
+          echo "Converted all .sh files to LF line endings."
+        # 如果 runner 中没有 dos2unix，可以先安装: sudo apt-get update && sudo apt-get install -y dos2unix
 
-      
-      # 优点 1: 添加 QEMU 以实现稳定的跨平台构建
+      # 步骤 3: 设置 QEMU 以支持多平台构建
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
+      # 步骤 4: 设置 Docker Buildx，这是现代化的构建引擎
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
 
-      # 优点 2: 使用更安全的 DOCKERHUB_TOKEN 登录
+      # 步骤 5: 登录到 Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }} # 强烈建议换成 Token
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 优点 3: 使用现代化的语法提取标签名
-      - name: Extract tag name
+      # 步骤 6 (核心优化): 使用官方 action 提取元数据 (标签和注释)
+      # 这比手动脚本更强大、更不容易出错
+      - name: Extract Docker metadata
         id: meta
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            TAG=${GITHUB_REF#refs/tags/}
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG=${{ github.event.inputs.tag }}
-          fi
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+        uses: docker/metadata-action@v5
+        with:
+          images: devinglaw/deeplxtov1api
+          tags: |
+            # 当创建 Git 标签 (如 v1.2.3) 时，生成 Docker 标签 1.2.3
+            type=semver,pattern={{version}}
+            # 当创建 Git 标签 (如 v1.2) 时，生成 Docker 标签 1.2
+            type=semver,pattern={{major}}.{{minor}}
+            # 当 workflow_dispatch 事件触发时，使用输入的 tag
+            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' }}
+            # 总是生成 latest 标签
+            type=raw,value=latest,enable=true
 
-      # 优点 4: 使用最新的 build-push-action
-      - name: Build and push
+      # 步骤 7 (核心优化): 构建并推送，增加缓存和元数据
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            devinglaw/deeplxtov1api:${{ steps.meta.outputs.tag }}
-            devinglaw/deeplxtov1api:latest
-          # 如果你的 Dockerfile 需要，可以在这里添加 build-args
-          # build-args: |
-          #   SOME_ARG=some_value
+          # 使用上一步生成的标签和注释
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 增加缓存，极大提升后续构建速度和稳定性
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
