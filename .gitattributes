@@ -1,8 +1,2 @@
-# .gitattributes
-
-# 强制所有文本文件使用 LF 换行符
-* text=auto eol=lf
-
-# 对 shell 脚本尤其要强制使用 LF
-*.sh eol=lf
-
+# Auto detect text files and perform LF normalization
+* text=auto

@@ -1,0 +1,47 @@
+# .dockerignore
+
+# 忽略 Git 相关文件
+.git
+.gitignore
+.gitattributes
+
+# 忽略 GitHub Actions 工作流配置
+.github
+
+# 忽略本地开发环境和依赖缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# 忽略本地配置文件和敏感信息
+.env
+*.env.*
+!*.env.example
+
+# 忽略测试和文档生成的结果
+.pytest_cache/
+.tox/
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# 忽略本地运行产生的结果和日志
+results/
+logs/
+*.log
+
+# 忽略 IDE 和编辑器配置文件
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 忽略操作系统生成的文件
+.DS_Store
+Thumbs.db
