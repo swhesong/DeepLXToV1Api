@@ -20,7 +20,7 @@ services:
 
     # 环境变量，UVICORN_WORKERS 在这里定义，控制启动进程数
     environment:
-      - UVICORN_WORKERS=2 
+      - UVICORN_WORKERS=1 
       - MAX_TEXT_LENGTH=5000
       - DEBUG=false
       - INITIAL_CHECK_DELAY=30
