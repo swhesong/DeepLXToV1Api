@@ -614,21 +614,37 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
         else:
             logger.error(f"[{request_id}] Invalid model format: {chat_request.model}")
             raise HTTPException(status_code=400, detail="Invalid model format. Use format: 'model-SOURCE-TARGET' or 'model-TARGET'")
-        
         # Extract and validate user message
         text = ""
         for message in chat_request.messages:
             if message.get('role') == 'user':
-                content = message.get('content', "")
+                # Get the content, which could be a string, a list, dict, or None
+                content = message.get('content')
+
                 if isinstance(content, str):
+                    # Standard case: "content": "Hello"
                     text = content
+                elif isinstance(content, list) and content:
+                    # Handle non-standard case: "content": ["Hello"]
+                    # This adds robustness for clients sending incorrect formats.
+                    # We assume the first element is the text we want.
+                    first_item = content[0]
+                    if isinstance(first_item, str):
+                        text = first_item
+                    elif isinstance(first_item, dict) and "text" in first_item:
+                         # Also handle vision model format: "content": [{"type": "text", "text": "Hello"}]
+                        text = first_item.get("text", "")
                 elif isinstance(content, dict):
-                    text = content.get('text', '')
+                     # This part from the original code remains for compatibility
+                     text = content.get('text', '')
+
+                # Once we find the user message, we can stop searching.
                 break
         
         if not text or not text.strip():
-            logger.warning(f"[{request_id}] Empty user message")
-            raise HTTPException(status_code=400, detail="No valid user message found")
+            logger.warning(f"[{request_id}] Empty or invalid user message in payload.")
+            raise HTTPException(status_code=400, detail="No valid user message found in 'messages'. The 'content' field must be a non-empty string.")
+
         
         # Text length validation
         # max_length = int(os.getenv("MAX_TEXT_LENGTH", 5000))
@@ -1161,5 +1177,3 @@ if __name__ == "__main__":
         uvicorn.run(app, **config)
     
     run_server()
-
-	
