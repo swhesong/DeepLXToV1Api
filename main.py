@@ -53,10 +53,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Get environment variables configuration
-MAX_REQUESTS_PER_MINUTE = int(os.getenv("MAX_REQUESTS_PER_MINUTE", 60))
-TIMEOUT = int(os.getenv("TIMEOUT", 30))
+MAX_REQUESTS_PER_MINUTE = int(os.getenv("MAX_REQUESTS_PER_MINUTE", 10000))
+TIMEOUT = int(os.getenv("TIMEOUT", 300))
 MAX_WORKERS = int(os.getenv("MAX_WORKERS", 5))
 CHECK_TIMEOUT = int(os.getenv("CHECK_TIMEOUT", 5))
+MAX_CONSECUTIVE_FAILURES = int(os.getenv("MAX_CONSECUTIVE_FAILURES", 15))
+DISABLE_RATE_LIMIT = os.getenv("DISABLE_RATE_LIMIT", "false").lower() == "true"
+ENABLE_CHAR_STREAMING = os.getenv("ENABLE_CHAR_STREAMING", "true").lower() == "true"
 
 class RateLimiter:
     def __init__(self, max_requests: int, time_window: int = 60):
@@ -294,10 +297,9 @@ class URLRotator:
             scored_urls = []
             
             for url in self.urls:
-                status = self.url_status.get_status(url)
-                
+                status = self.url_status.get_status(url)              
                 # Skip URLs with too many consecutive failures
-                if status.get('consecutive_failures', 0) > 5:
+                if status.get('consecutive_failures', 0) > MAX_CONSECUTIVE_FAILURES:
                     continue
                 
                 if status.get('available', True):  # Default to available
@@ -594,7 +596,10 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
         client_ip = getattr(request.state, 'client_ip', 'unknown')
         request_id = getattr(request.state, 'request_id', str(uuid.uuid4())[:8])
         
-        await rate_limiter.acquire(client_ip)
+        # 从环境变量读取是否禁用速率限制，默认为不禁用(false)
+        if not DISABLE_RATE_LIMIT:
+            await rate_limiter.acquire(client_ip)
+
         
         logger.debug(f"[{request_id}] Processing chat completion request")
         
@@ -651,24 +656,44 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
                         translated_text = translation_result.get(target_lang, "")
                         
                         logger.info(f"[{request_id}] Streaming translation completed, {len(translated_text)} chars")
-                        
-                        # Send translation in chunks for better UX
-                        chunk_size = 100
-                        for i in range(0, len(translated_text), chunk_size):
-                            chunk = translated_text[i:i + chunk_size]
-                            data = {
-                                "id": chat_message_id,
-                                "object": "chat.completion.chunk",
-                                "created": timestamp,
-                                "model": chat_request.model,
-                                "choices": [{
-                                    "index": 0,
-                                    "delta": {"content": chunk},
-                                    "finish_reason": None
-                                }]
-                            }
-                            yield f"data: {json.dumps(data)}\n\n"
-                            await asyncio.sleep(0.01)  # Small delay for chunking effect
+			if use_streaming and ENABLE_CHAR_STREAMING:
+			    # 逐字发送，模拟真实打字效果
+			    for char in translated_text:
+			        delta = {"content": char}
+				data = {
+			            "id": chat_message_id,
+				    "object": "chat.completion.chunk",
+		                    "created": timestamp,
+				    "model": chat_request.model,
+				    "choices": [{
+				        "index": 0,
+				        "delta": {"content": char},
+				        "finish_reason": None
+	                            }]
+	                        }
+			        yield f"data: {json.dumps(data)}\n\n"
+			        # 根据文本长度动态调整延迟，避免长文本输出过慢
+			        delay = max(0.001, 0.1 / (len(translated_text) + 1))
+			        await asyncio.sleep(delay)
+			else:
+			    # 如果不启用模拟流，或者不是流式请求，则按原来的方式（或整块发送）                   
+	                        # Send translation in chunks for better UX
+	                        chunk_size = 100
+	                        for i in range(0, len(translated_text), chunk_size):
+	                            chunk = translated_text[i:i + chunk_size]
+	                            data = {
+	                                "id": chat_message_id,
+	                                "object": "chat.completion.chunk",
+	                                "created": timestamp,
+	                                "model": chat_request.model,
+	                                "choices": [{
+	                                    "index": 0,
+	                                    "delta": {"content": chunk},
+	                                    "finish_reason": None
+	                                }]
+	                            }
+	                            yield f"data: {json.dumps(data)}\n\n"
+	                            await asyncio.sleep(0.01)  # Small delay for chunking effect
                         
                         # Send finish signal
                         finish_data = {
@@ -1073,7 +1098,6 @@ async def periodic_url_check():
     await asyncio.sleep(initial_delay)
     
     consecutive_failures = 0
-    max_consecutive_failures = 5
     
     while True:
         try:
