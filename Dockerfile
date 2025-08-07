@@ -21,8 +21,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制所有应用代码到工作目录
 COPY . .
 
-# 赋予入口脚本执行权限
-RUN chmod +x /app/entrypoint.sh
+# 强制将 entrypoint.sh 的换行符从 CRLF(Windows) 转为 LF(Linux)
+# 并且赋予它可执行权限
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
 # 暴露应用端口
 EXPOSE 8000
 
