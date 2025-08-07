@@ -626,9 +626,9 @@ async def chat_completions(chat_request: ChatRequest, request: Request):
             raise HTTPException(status_code=400, detail="No valid user message found")
         
         # Text length validation
-        max_length = int(os.getenv("MAX_TEXT_LENGTH", 5000))
-        if len(text) > max_length:
-            raise HTTPException(status_code=400, detail=f"Text too long (max {max_length} characters)")
+        # max_length = int(os.getenv("MAX_TEXT_LENGTH", 5000))
+        # if len(text) > max_length:
+            # raise HTTPException(status_code=400, detail=f"Text too long (max {max_length} characters)")
         
         logger.info(f"[{request_id}] Translating {len(text)} chars: {source_lang or 'AUTO'} -> {target_lang}")
         
