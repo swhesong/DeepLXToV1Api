@@ -20,7 +20,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
 
+      - name: Check for CRLF line endings
+        uses: check-line-endings/check-line-endings@v1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
       # 优点 1: 添加 QEMU 以实现稳定的跨平台构建
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
