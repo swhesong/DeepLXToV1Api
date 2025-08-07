@@ -27,12 +27,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 步骤 2 (可选但推荐): 检查并强制转换为 LF 行尾，避免脚本错误
-      - name: Check and convert line endings to LF
+      # 步骤 2: 自动修复脚本文件的行尾，确保跨平台兼容性
+      - name: Ensure LF line endings for shell scripts
         run: |
+          if ! command -v dos2unix &> /dev/null; then
+            echo "dos2unix command not found. Installing it..."
+            sudo apt-get update -y
+            sudo apt-get install -y dos2unix
+          fi
+          echo "Converting shell scripts to LF line endings..."
           find . -type f -name "*.sh" -exec dos2unix {} +
-          echo "Converted all .sh files to LF line endings."
-        # 如果 runner 中没有 dos2unix，可以先安装: sudo apt-get update && sudo apt-get install -y dos2unix
 
       # 步骤 3: 设置 QEMU 以支持多平台构建
       - name: Set up QEMU
