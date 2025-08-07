@@ -307,9 +307,9 @@ class URLRotator:
                     base_latency = status.get('latency', 1.0)
                     request_load = self.request_counts.get(url, 0) * 0.005  # Load factor
                     recent_usage = max(0, 10 - (now - self.last_used.get(url, 0))) * 0.05  # Recent usage penalty
-                    denominator = max(success_rate, 0.01) * weight
                     success_rate = status.get('success_rate', 1.0)
                     weight = self.url_weights.get(url, 1.0)
+                    denominator = max(success_rate, 0.01) * weight
                     
                     # Final score (lower is better)
                     score = (base_latency + request_load + recent_usage) / denominator
