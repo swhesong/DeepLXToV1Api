@@ -13,7 +13,17 @@
 一个强大、可靠且高性能的代理服务，它将多个 [DeepLX](https://github.com/OwO-Network/DeepLX) 服务聚合，并将其转换为一个统一的、兼容 OpenAI `v1/chat/completions` 格式的 API 接口。
 
 本项目专为需要高可用性和高吞吐量翻译服务的场景而设计，内置了智能负载均衡、自动健康检查和动态端点管理等高级功能。
+## 用法
 
+仓库内已包含相关文件和目录，拉到本地后修改 docker-compose.yml 文件里的环境变量后运行`docker-compose up -d`即可。
+
+模型名说明：
+
+- 示例：
+    - `deeplx-EN-ZH`: 英文转中文
+    - `deeplx-ZH-EN`: 中文转英文
+    - `deeplx-EN`: 自动识别语言转英文
+    - `deeplx-ZH`: 自动识别语言转中文
 ## ✨ 核心功能
 
 *   **🚀 OpenAI 格式兼容**：完美模拟 `v1/chat/completions` 接口，无缝接入各类支持 OpenAI API 的应用和客户端。
