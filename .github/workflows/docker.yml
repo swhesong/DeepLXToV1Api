@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Manual Tag (e.g., 1.2.3). If empty, uses "latest".'
+        description: '为手动构建指定一个 Docker 标签 (例如: 1.2.4-beta)'
         required: false
         type: string
 
@@ -27,15 +27,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 步骤 2: 自动修复脚本文件的行尾，确保跨平台兼容性
+      # 步骤 2 (已加固): 自动修复脚本文件的行尾，确保跨平台兼容性
       - name: Ensure LF line endings for shell scripts
         run: |
           if ! command -v dos2unix &> /dev/null; then
-            echo "dos2unix command not found. Installing it..."
+            echo "dos2unix command not found, installing it..."
             sudo apt-get update -y
             sudo apt-get install -y dos2unix
           fi
-          echo "Converting shell scripts to LF line endings..."
+          echo "Converting shell scripts to LF line endings to prevent errors..."
           find . -type f -name "*.sh" -exec dos2unix {} +
 
       # 步骤 3: 设置 QEMU 以支持多平台构建
@@ -55,21 +55,19 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # 步骤 6 (核心优化): 使用官方 action 提取元数据 (标签和注释)
-      # 这比手动脚本更强大、更不容易出错
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: devinglaw/deeplxtov1api
           tags: |
-            # 当创建 Git 标签 (如 v1.2.3) 时，生成 Docker 标签 1.2.3
+            # 当创建 Git 标签 (如 v1.2.3) 时，生成 Docker 标签 1.2.3 和 1.2
             type=semver,pattern={{version}}
-            # 当创建 Git 标签 (如 v1.2) 时，生成 Docker 标签 1.2
             type=semver,pattern={{major}}.{{minor}}
-            # 当 workflow_dispatch 事件触发时，使用输入的 tag
+            # 当手动触发时，使用输入的 tag
             type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' }}
-            # 总是生成 latest 标签
-            type=raw,value=latest,enable=true
+            # (安全优化) 仅在创建 release 时才打上 latest 标签
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
 
       # 步骤 7 (核心优化): 构建并推送，增加缓存和元数据
       - name: Build and push Docker image
