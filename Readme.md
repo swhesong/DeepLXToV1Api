@@ -1,26 +1,5 @@
 # DeepLX to OpenAI API Adapter
 
-[
-
-![Python Version](https://img.shields.io/badge/Python-3.8+-blue.svg)
-
-](https://www.python.org/)
-[
-
-![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg?logo=docker)
-
-](https://www.docker.com/)
-[
-
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-
-](https://opensource.org/licenses/MIT)
-[
-
-![OpenAI Compatible](https://img.shields.io/badge/OpenAI%20API-Compatible-brightgreen)
-
-](https://platform.openai.com/docs/api-reference/chat)
-
 一个高性能、高可用的 DeepLX 适配器，它能将标准的 OpenAI 聊天接口请求（`/v1/chat/completions`）无缝转换为对多个 DeepLX 后端服务的调用。项目内置了**负载均衡、自动故障转移和后端健康检查**机制，确保翻译服务稳定、高效，并支持**流式响应**，带来如打字机般的流畅体验。
 
 ## ✨ 核心功能
