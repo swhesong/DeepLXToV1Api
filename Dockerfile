@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制所有应用代码到工作目录
 COPY . .
 
+# 赋予入口脚本执行权限
+RUN chmod +x /app/entrypoint.sh
 # 暴露应用端口
 EXPOSE 8000
 
@@ -29,7 +31,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# 默认启动命令
-# 使用 exec 确保 uvicorn 成为主进程 (PID 1)，能正确接收和处理信号
+# 使用入口脚本启动，它会读取 UVICORN_WORKERS 环境变量
+ENTRYPOINT ["/app/entrypoint.sh"]
 # --workers 参数已被移除，将由 docker-compose.yml 中的环境变量 UVICORN_WORKERS 控制
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# CMD 现在变成了 ENTRYPOINT 的参数，这里我们不需要它了，可以移除或注释掉
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
